@@ -31,8 +31,6 @@ const SUMMARY_EMOJI: Record<string, string> = {
   humid: '💧',
 }
 
-const SUMMARIES = Object.keys(SUMMARY_EMOJI)
-
 function summaryEmoji(summary: string) {
   return SUMMARY_EMOJI[summary.toLowerCase()] ?? '🌍'
 }
@@ -47,24 +45,6 @@ function formatDay(dateStr: string) {
 
 function cToF(c: number) {
   return Math.round((c * 9) / 5 + 32)
-}
-
-// Waxay abuurtaa `count` records oo bilaabmaya maalinta xigta ee `afterDate`
-function generateFakeForecasts(afterDate: string, count: number): WeatherForecast[] {
-  if (count <= 0) return []
-  const base = new Date(`${afterDate}T00:00:00`)
-  return Array.from({ length: count }, (_, i) => {
-    const d = new Date(base)
-    d.setDate(d.getDate() + i + 1) // +1 si aan ugu bilaabin isla maalinta
-    const tempC = Math.round(Math.random() * 60 - 10)
-    const summary = SUMMARIES[Math.floor(Math.random() * SUMMARIES.length)]
-    return {
-      date: d.toISOString().slice(0, 10),
-      temperatureC: tempC,
-      temperatureF: cToF(tempC),
-      summary: summary.charAt(0).toUpperCase() + summary.slice(1),
-    }
-  })
 }
 
 const PAGE_SIZE = 10
@@ -120,18 +100,10 @@ export default function App() {
       try {
         const res = await fetch(apiUrl, { signal: controller.signal })
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
-        const real = (await res.json()) as WeatherForecast[]
-
-        // Fake-yada waxaan ku bilaabaa taariikh fog (2 sanadood) si aan u
-        // xaqiijiyo in 200 records-ka oo dhan ay muuqdaan.
-        const lastRealDate = real.length
-          ? real[real.length - 1].date
-          : new Date().toISOString().slice(0, 10)
-        const fakes = generateFakeForecasts(lastRealDate, 200 - real.length)
-        setForecasts([...real, ...fakes])
+        setForecasts((await res.json()) as WeatherForecast[])
       } catch (e) {
         if ((e as any)?.name === 'AbortError') return
-        setForecasts(generateFakeForecasts(new Date().toISOString().slice(0, 10), 200))
+        setError(e instanceof Error ? e.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
