@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
 
 type WeatherForecast = {
@@ -19,17 +19,7 @@ function formatDay(dateStr: string) {
   }).format(d)
 }
 
-function cToF(c: number) {
-  return Math.round((c * 9) / 5 + 32)
-}
-
 const PAGE_SIZE = 10
-
-const EMPTY_FORM: Omit<WeatherForecast, 'temperatureF'> = {
-  date: new Date().toISOString().slice(0, 10),
-  temperatureC: 20,
-  summary: 'Warm',
-}
 
 export default function App() {
   const apiUrl = useMemo(
@@ -45,12 +35,6 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [filterSummary, setFilterSummary] = useState('')
   const [page, setPage] = useState(1)
-
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ ...EMPTY_FORM })
-  const [posting, setPosting] = useState(false)
-  const [postError, setPostError] = useState<string | null>(null)
-  const formRef = useRef<HTMLFormElement>(null)
 
   const loadForecasts = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
@@ -109,27 +93,6 @@ export default function App() {
 
   const hasFilters = search || filterSummary
 
-  async function handlePost(e: React.FormEvent) {
-    e.preventDefault()
-    setPosting(true)
-    setPostError(null)
-    const payload: WeatherForecast = { ...form, temperatureF: cToF(form.temperatureC) }
-    try {
-      await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-    } catch {
-      /* */
-    }
-    setForecasts((prev) => [payload, ...prev])
-    setForm({ ...EMPTY_FORM })
-    setShowForm(false)
-    setPage(1)
-    setPosting(false)
-  }
-
   function pageButtons() {
     const btns: (number | '…')[] = []
     if (totalPages <= 7) {
@@ -160,16 +123,6 @@ export default function App() {
               disabled={loading || refreshing}
             >
               {refreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => {
-                setShowForm((v) => !v)
-                setPostError(null)
-              }}
-            >
-              {showForm ? 'Close' : 'Add Forecast'}
             </button>
           </div>
         </header>
@@ -202,58 +155,6 @@ export default function App() {
             </button>
           )}
         </div>
-
-        {showForm && (
-          <section className="panel">
-            <h2 className="panel__title">Add New Forecast</h2>
-            <form ref={formRef} className="form" onSubmit={handlePost}>
-              <div className="form__row">
-                <label className="field">
-                  Date
-                  <input
-                    className="input"
-                    type="date"
-                    value={form.date}
-                    required
-                    onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-                  />
-                </label>
-                <label className="field">
-                  Temperature (°C)
-                  <input
-                    className="input"
-                    type="number"
-                    value={form.temperatureC}
-                    required
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, temperatureC: Number(e.target.value) }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  Summary
-                  <input
-                    className="input"
-                    type="text"
-                    value={form.summary}
-                    required
-                    placeholder="Warm, Hot, Chilly…"
-                    onChange={(e) => setForm((p) => ({ ...p, summary: e.target.value }))}
-                  />
-                </label>
-              </div>
-              {postError && <p className="error">{postError}</p>}
-              <div className="form__actions">
-                <button type="button" className="btn btn--ghost" onClick={() => setShowForm(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn--primary" disabled={posting}>
-                  {posting ? 'Saving…' : 'Save'}
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
 
         {loading ? (
           <div className="message">Loading forecasts…</div>
