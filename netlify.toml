@@ -1,0 +1,22 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Proxy API requests to Azure (same as Vite dev proxy)
+[[redirects]]
+  from = "/WeatherForecast/*"
+  to = "https://webappa-gxdadkd0e6gdgkb0.canadacentral-01.azurewebsites.net/WeatherForecast/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/WeatherForecast"
+  to = "https://webappa-gxdadkd0e6gdgkb0.canadacentral-01.azurewebsites.net/WeatherForecast"
+  status = 200
+  force = true
+
+# SPA fallback for React app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
